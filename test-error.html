@@ -35,6 +35,11 @@
             <h4>ステータス:</h4>
             <pre id="statusContent">エラー収集システム読み込み中...</pre>
         </div>
+
+        <div id="errorLog" style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; margin-top: 20px; border-radius: 5px; min-height: 150px;">
+            <h4>🚨 エラーテストログ:</h4>
+            <div id="errorLogContent" style="font-family: monospace; font-size: 12px; white-space: pre-wrap;">エラーテスト待機中...\n</div>
+        </div>
     </div>
 
     <!-- Firebase SDK -->
@@ -105,8 +110,14 @@
                 // Firebaseに保存
                 database.ref('system/errors').push(errorData).then(() => {
                     console.log('🚨 エラー収集完了:', errorData.id);
+                    if (window.addLog) {
+                        addLog(`✅ Firebase保存成功: ${errorData.id}`);
+                    }
                 }).catch((error) => {
                     console.error('エラー保存失敗:', error);
+                    if (window.addLog) {
+                        addLog(`❌ Firebase保存失敗: ${error.message}`, true);
+                    }
                 });
             }
 
@@ -128,9 +139,32 @@
             }
         }
 
+        // ログ表示機能
+        function addLog(message, isError = false) {
+            const logContent = document.getElementById('errorLogContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logContent.textContent += logEntry;
+            logContent.scrollTop = logContent.scrollHeight;
+
+            // コンソールにも出力
+            if (isError) {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
+        }
+
         // エラー収集システム初期化
         window.errorCollector = new SimpleErrorCollector();
         
+        // ログ機能をエラー収集システムに追加
+        const originalCollectError = window.errorCollector.collectError;
+        window.errorCollector.collectError = function(errorInfo) {
+            addLog(`🚨 エラー検出: ${errorInfo.type} - ${errorInfo.message}`, true);
+            return originalCollectError.call(this, errorInfo);
+        };
+
         // 初期化完了後にステータス表示
         setTimeout(() => {
             const status = window.errorCollector.getStatus();
@@ -139,40 +173,53 @@
                 `初期化: ${status.initialized}\n` +
                 `エラー数: ${status.errorCount}\n` +
                 `アプリ情報: ${JSON.stringify(status.appInfo, null, 2)}`;
+            
+            addLog('✅ エラー収集システム準備完了');
         }, 1000);
 
         // テスト関数をグローバルに定義
         window.testJavaScriptError = function() {
-            console.log('🚨 JavaScriptエラーテスト開始');
+            addLog('🔴 JavaScriptエラーテスト実行中...');
             // setTimeout で uncaught error を発生させる
             setTimeout(() => {
+                addLog('💥 TypeError発生予定（0.1秒後）');
                 const obj = null;
                 obj.push('test'); // TypeError - これがグローバルエラーハンドラーでキャッチされる
             }, 100);
         };
 
         window.testPromiseRejection = function() {
+            addLog('🔴 Promise Rejectionテスト実行中...');
             // 意図的なPromise rejection
             Promise.reject(new Error('テスト用Promise拒否エラー'));
+            addLog('💥 Promise rejection発生');
         };
 
         window.testFirebaseError = function() {
+            addLog('🔴 Firebaseエラーテスト実行中...');
             // Firebase関連エラー（認証なしでデータベース操作）
             database.ref('test-collection').push({ test: 'data' })
-                .catch(error => console.error('Firebase操作エラー（意図的）:', error));
+                .then(() => {
+                    addLog('⚠️ Firebase操作が成功しました（予期しない動作）');
+                })
+                .catch(error => {
+                    addLog(`💥 Firebase操作エラー: ${error.message}`, true);
+                });
         };
 
         window.testManualReport = function() {
-            // 手動エラー報告
+            addLog('🔴 手動エラー報告テスト実行中...');
             if (window.errorCollector) {
                 window.errorCollector.reportError('手動テストエラー', {
                     testType: 'manual',
                     timestamp: new Date().toISOString(),
                     userAction: 'ボタンクリック'
                 });
-                alert('手動エラー報告を送信しました');
+                addLog('✅ 手動エラー報告をFirebaseに送信');
+                alert('✅ 手動エラー報告を送信しました！ログを確認してください。');
             } else {
-                alert('エラー収集システムが利用できません');
+                addLog('❌ エラー収集システムが利用できません', true);
+                alert('❌ エラー収集システムが利用できません');
             }
         };
 
