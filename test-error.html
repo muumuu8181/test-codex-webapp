@@ -15,6 +15,9 @@
 </head>
 <body>
     <div class="container">
+        <div style="text-align: right; margin-bottom: 10px;">
+            <a href="index.html" style="color: #007bff; text-decoration: none;">← メインページに戻る</a>
+        </div>
         <h1>🚨 エラー収集システム テスト</h1>
         <p>このページでは意図的にエラーを発生させて、エラー収集システムの動作を確認できます。</p>
         
@@ -140,9 +143,12 @@
 
         // テスト関数をグローバルに定義
         window.testJavaScriptError = function() {
-            // 意図的なJavaScriptエラー
-            const obj = null;
-            obj.push('test'); // TypeError
+            console.log('🚨 JavaScriptエラーテスト開始');
+            // setTimeout で uncaught error を発生させる
+            setTimeout(() => {
+                const obj = null;
+                obj.push('test'); // TypeError - これがグローバルエラーハンドラーでキャッチされる
+            }, 100);
         };
 
         window.testPromiseRejection = function() {
