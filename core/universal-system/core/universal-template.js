@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Universal Template v0.01 - カップラーメン方式
+ * Universal Template v0.2 - カップラーメン方式
  * よっぽどの馬鹿でも使えるテンプレートシステム
  * 
  * 新人問題の完全防止:
@@ -17,7 +17,7 @@ const { execSync } = require('child_process');
 
 class UniversalTemplate {
     constructor() {
-        this.version = '0.01';
+        this.version = '0.2';
         this.projectPath = process.cwd();
         this.config = {
             firebase: {

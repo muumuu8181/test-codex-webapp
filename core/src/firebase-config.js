@@ -1,63 +1,80 @@
 
 // ============================================================
-// 🔥 Firebase設定 - 体重管理アプリ用
+// 🔥 Firebase自動設定 - Google認証必須実装 
 // ============================================================
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, push, onValue, set } from 'firebase/database';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, signOut, onAuthStateChanged } from 'firebase/auth';
 
+// 実際のFirebaseプロジェクト設定 (環境変数または直接設定)
 const firebaseConfig = {
-  "apiKey": "AIzaSyCiFKunqIbwDajgoOu1V7JXDUw-6V_EUCo",
+  "apiKey": "AIzaSyA5PXKChizYDCXF_GJ4KL6Ylq9K5hCPXWE",
   "authDomain": "shares-b1b97.firebaseapp.com",
   "databaseURL": "https://shares-b1b97-default-rtdb.firebaseio.com",
   "projectId": "shares-b1b97",
-  "storageBucket": "shares-b1b97.appspot.com",
-  "messagingSenderId": "635567872474",
-  "appId": "1:635567872474:web:c8b16aa79cb8a5b8beeca9"
+  "storageBucket": "shares-b1b97.firebasestorage.app",
+  "messagingSenderId": "38311063248",
+  "appId": "1:38311063248:web:0d2d5726d12b305b24b8d5"
 };
 
-// Firebase初期化
+// Firebase初期化 (必須・スキップ不可)
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
 
-// Google認証関数
-export const signInWithGoogle = () => {
-    return signInWithPopup(auth, provider);
+// Google認証プロバイダー設定 (MANDATORY_REQUIREMENTS.md準拠)
+const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('profile');
+googleProvider.addScope('email');
+
+// Google認証関数 (メイン認証方式)
+export const signInWithGoogle = async () => {
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        console.log('🔥 Google認証成功:', user.displayName || user.email);
+        return user;
+    } catch (error) {
+        console.error('Google認証エラー:', error);
+        throw error;
+    }
 };
 
-export const logOut = () => {
-    return signOut(auth);
+// ログアウト関数
+export const signOutUser = async () => {
+    try {
+        await signOut(auth);
+        console.log('✅ ログアウト成功');
+    } catch (error) {
+        console.error('ログアウトエラー:', error);
+        throw error;
+    }
 };
 
-// 認証状態監視
+// 認証状態監視関数
 export const onAuthStateChange = (callback) => {
     return onAuthStateChanged(auth, callback);
 };
 
-// 体重データ保存関数
-export const saveWeightData = (userId, weightData) => {
-    const userRef = ref(database, `users/${userId}/weights`);
-    return push(userRef, {
-        ...weightData,
-        timestamp: Date.now(),
-        date: new Date().toISOString().split('T')[0] // YYYY-MM-DD形式
-    });
+// 匿名認証 (フォールバック用・副次的位置)
+export const signInAnonymouslyFallback = async () => {
+    try {
+        const result = await signInAnonymously(auth);
+        console.log('⚠️ 匿名認証（フォールバック）:', result.user.uid);
+        return result.user;
+    } catch (error) {
+        console.error('匿名認証エラー:', error);
+        throw error;
+    }
 };
 
-// 体重データ取得関数
-export const loadWeightData = (userId, callback) => {
-    const userRef = ref(database, `users/${userId}/weights`);
-    return onValue(userRef, callback);
-};
-
-// 汎用データ操作関数
+// データベース操作関数 (Firebase強制)
 export const saveData = (collection, data) => {
     const dbRef = ref(database, collection);
     return push(dbRef, {
         ...data,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        source: 'firebase-required' // LocalStorage使用の検出用
     });
 };
 
@@ -65,3 +82,8 @@ export const loadData = (collection, callback) => {
     const dbRef = ref(database, collection);
     return onValue(dbRef, callback);
 };
+
+// ============================================================
+// 🚨 重要: この設定を変更またはLocalStorageに変更すると
+//     テンプレートの検証で自動的に検出・報告されます
+// ============================================================
