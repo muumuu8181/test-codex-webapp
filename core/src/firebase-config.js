@@ -3,8 +3,9 @@
 // 🔥 Firebase自動設定 - Google認証必須実装 
 // ============================================================
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, push, onValue, set } from 'firebase/database';
+import { getDatabase, ref, push, onValue, set, get } from 'firebase/database';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, signOut, onAuthStateChanged } from 'firebase/auth';
+import { errorCollector } from './error-collector.js';
 
 // 実際のFirebaseプロジェクト設定 (環境変数または直接設定)
 const firebaseConfig = {
@@ -21,6 +22,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
+
+// エラー収集システム初期化
+errorCollector.init(database, auth, {
+    name: "Universal Template",
+    version: "0.2"
+});
 
 // Google認証プロバイダー設定 (MANDATORY_REQUIREMENTS.md準拠)
 const googleProvider = new GoogleAuthProvider();
@@ -82,6 +89,9 @@ export const loadData = (collection, callback) => {
     const dbRef = ref(database, collection);
     return onValue(dbRef, callback);
 };
+
+// エラー収集システムのエクスポート
+export { errorCollector };
 
 // ============================================================
 // 🚨 重要: この設定を変更またはLocalStorageに変更すると
