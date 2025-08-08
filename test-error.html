@@ -39,7 +39,13 @@
         </div>
 
         <div id="errorLog" style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; margin-top: 20px; border-radius: 5px; min-height: 150px;">
-            <h4>🚨 エラーテストログ:</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin: 0;">🚨 エラーテストログ:</h4>
+                <div>
+                    <button class="test-btn info-btn" onclick="copyErrorLog()" style="padding: 5px 10px; font-size: 12px; margin-right: 5px;">📋 コピー</button>
+                    <button class="test-btn" onclick="clearErrorLog()" style="background: #6c757d; padding: 5px 10px; font-size: 12px;">🗑️ クリア</button>
+                </div>
+            </div>
             <div id="errorLogContent" style="font-family: monospace; font-size: 12px; white-space: pre-wrap;">エラーテスト待機中...\n</div>
         </div>
     </div>
@@ -336,6 +342,48 @@
             };
             
             addLog(`📋 保存予定データ形式:\n${JSON.stringify(sampleData, null, 2)}`);
+        };
+
+        // ログコピー機能
+        window.copyErrorLog = function() {
+            const logContent = document.getElementById('errorLogContent');
+            const logText = logContent.textContent;
+            
+            // クリップボードにコピー
+            navigator.clipboard.writeText(logText).then(() => {
+                addLog('✅ エラーログをクリップボードにコピー完了');
+                
+                // ボタンフィードバック
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ コピー完了!';
+                button.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#17a2b8';
+                }, 2000);
+                
+            }).catch((error) => {
+                addLog(`❌ コピー失敗: ${error.message}`, true);
+                
+                // フォールバック: テキスト選択
+                if (window.getSelection) {
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(logContent);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    addLog('💡 コピー失敗 - テキストを選択しました（Ctrl+Cでコピー）');
+                }
+            });
+        };
+
+        // ログクリア機能
+        window.clearErrorLog = function() {
+            const logContent = document.getElementById('errorLogContent');
+            logContent.textContent = 'エラーテストログをクリアしました...\n';
+            addLog('🗑️ エラーログをクリア');
         };
     </script>
 </body>
