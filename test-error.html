@@ -31,6 +31,7 @@
         <button class="test-btn info-btn" onclick="showErrorCollectorStatus()">収集システム状況</button>
         <button class="test-btn info-btn" onclick="testConsoleLog()">デバッグログ</button>
         <button class="test-btn info-btn" onclick="showFirebasePermissionHelp()">🔧 権限エラー対処法</button>
+        <button class="test-btn info-btn" onclick="checkFirebaseData()">🔍 Firebase確認</button>
         
         <div id="status" style="background: #e9ecef; padding: 15px; margin-top: 20px; border-radius: 5px;">
             <h4>ステータス:</h4>
@@ -100,7 +101,7 @@
                 const errorData = {
                     id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                     appName: "Error Test Page",
-                    appVersion: "0.2",
+                    appVersion: "0.2.1",
                     timestamp: Date.now(),
                     type: errorInfo.type,
                     message: errorInfo.message,
@@ -225,11 +226,16 @@
         };
 
         window.showErrorCollectorStatus = function() {
+            addLog('📊 収集システム状況確認中...');
             if (window.errorCollector) {
                 const status = window.errorCollector.getStatus();
-                alert(JSON.stringify(status, null, 2));
+                const statusText = JSON.stringify(status, null, 2);
+                addLog(`📊 システム状況:\n${statusText}`);
+                alert(statusText);
             } else {
-                alert('エラー収集システムが利用できません');
+                const errorMsg = 'エラー収集システムが利用できません';
+                addLog(`❌ ${errorMsg}`, true);
+                alert(errorMsg);
             }
         };
 
@@ -283,6 +289,44 @@
 
             alert(helpMessage);
             addLog('🔧 Firebase権限対処法を表示');
+        };
+
+        window.checkFirebaseData = function() {
+            addLog('🔍 Firebase接続確認中...');
+            
+            // Firebase接続テスト
+            database.ref('system/errors').limitToLast(1).once('value')
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        addLog('✅ Firebase接続成功 - エラーデータ取得');
+                        addLog(`📊 最新エラー: ${JSON.stringify(data, null, 2)}`);
+                    } else {
+                        addLog('⚠️ Firebase接続成功 - エラーデータなし（権限修正後に確認）');
+                    }
+                })
+                .catch((error) => {
+                    addLog(`❌ Firebase接続エラー: ${error.message}`, true);
+                    if (error.code === 'PERMISSION_DENIED') {
+                        addLog('💡 「🔧 権限エラー対処法」ボタンで修正方法確認');
+                    }
+                });
+            
+            // 保存予定のデータ形式を表示
+            const sampleData = {
+                id: "error_1691234567890_abc123",
+                appName: "Error Test Page",
+                appVersion: "0.2.1",
+                timestamp: Date.now(),
+                dateString: new Date().toISOString(),
+                type: "javascript-error",
+                message: "Cannot read properties of null",
+                stack: "TypeError: Cannot read properties of null...",
+                userAgent: navigator.userAgent.substring(0, 50) + "...",
+                url: window.location.href
+            };
+            
+            addLog(`📋 保存予定データ形式:\n${JSON.stringify(sampleData, null, 2)}`);
         };
     </script>
 </body>
