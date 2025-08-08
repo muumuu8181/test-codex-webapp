@@ -30,6 +30,7 @@
         <h3>システム情報</h3>
         <button class="test-btn info-btn" onclick="showErrorCollectorStatus()">収集システム状況</button>
         <button class="test-btn info-btn" onclick="testConsoleLog()">デバッグログ</button>
+        <button class="test-btn info-btn" onclick="showFirebasePermissionHelp()">🔧 権限エラー対処法</button>
         
         <div id="status" style="background: #e9ecef; padding: 15px; margin-top: 20px; border-radius: 5px;">
             <h4>ステータス:</h4>
@@ -233,9 +234,55 @@
         };
 
         window.testConsoleLog = function() {
+            addLog('🔵 デバッグログテスト実行中...');
             console.log('🚨 デバッグ: テストログ出力');
             console.warn('⚠️ テスト警告メッセージ');
             console.error('❌ テストエラーメッセージ（Firebase関連）');
+            addLog('📝 コンソールログ出力完了（F12でコンソール確認）');
+        };
+
+        window.showFirebasePermissionHelp = function() {
+            const helpMessage = `🔧 Firebase PERMISSION_DENIED 対処法
+
+1. Firebase Console にアクセス
+   https://console.firebase.google.com/
+
+2. プロジェクト「shares-b1b97」を選択
+
+3. 左メニュー「Realtime Database」→「ルール」
+
+4. 現在のルール:
+{
+  "rules": {
+    ".read": false,
+    ".write": false
+  }
+}
+
+5. 以下に変更:
+{
+  "rules": {
+    "system": {
+      "errors": {
+        ".write": true,
+        ".read": false
+      }
+    },
+    "users": {
+      "$uid": {
+        ".write": "$uid === auth.uid",
+        ".read": "$uid === auth.uid"
+      }
+    }
+  }
+}
+
+6. 「公開」ボタンをクリック
+
+これでエラー収集が動作します。`;
+
+            alert(helpMessage);
+            addLog('🔧 Firebase権限対処法を表示');
         };
     </script>
 </body>
