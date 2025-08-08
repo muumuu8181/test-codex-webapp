@@ -217,11 +217,10 @@
                     timestamp: new Date().toISOString(),
                     userAction: 'ボタンクリック'
                 });
-                addLog('✅ 手動エラー報告をFirebaseに送信');
-                alert('✅ 手動エラー報告を送信しました！ログを確認してください。');
+                addLog('✅ 手動エラー報告をFirebaseに送信完了');
+                // ポップアップ削除 - ログで十分
             } else {
                 addLog('❌ エラー収集システムが利用できません', true);
-                alert('❌ エラー収集システムが利用できません');
             }
         };
 
@@ -231,11 +230,10 @@
                 const status = window.errorCollector.getStatus();
                 const statusText = JSON.stringify(status, null, 2);
                 addLog(`📊 システム状況:\n${statusText}`);
-                alert(statusText);
+                // alert削除 - ログだけで十分
             } else {
                 const errorMsg = 'エラー収集システムが利用できません';
                 addLog(`❌ ${errorMsg}`, true);
-                alert(errorMsg);
             }
         };
 
@@ -248,48 +246,59 @@
         };
 
         window.showFirebasePermissionHelp = function() {
-            const helpMessage = `🔧 Firebase PERMISSION_DENIED 対処法
-
-1. Firebase Console にアクセス
-   https://console.firebase.google.com/
-
-2. プロジェクト「shares-b1b97」を選択
-
-3. 左メニュー「Realtime Database」→「ルール」
-
-4. 現在のルール:
-{
-  "rules": {
-    ".read": false,
-    ".write": false
-  }
-}
-
-5. 以下に変更:
-{
-  "rules": {
-    "system": {
-      "errors": {
-        ".write": true,
-        ".read": false
-      }
-    },
-    "users": {
-      "$uid": {
-        ".write": "$uid === auth.uid",
-        ".read": "$uid === auth.uid"
-      }
-    }
-  }
-}
-
-6. 「公開」ボタンをクリック
-
-これでエラー収集が動作します。`;
-
-            alert(helpMessage);
-            addLog('🔧 Firebase権限対処法を表示');
+            addLog('🔧 Firebase権限問題 - 代替方法試行中...');
+            
+            // 方法1: 一時的に全体権限で試行
+            addLog('📝 対処法1: Firebase Console設定変更');
+            addLog('   1. https://console.firebase.google.com/ にアクセス');
+            addLog('   2. プロジェクト「shares-b1b97」選択');
+            addLog('   3. Realtime Database → ルール');
+            addLog('   4. 以下に変更:');
+            addLog('   {');
+            addLog('     "rules": {');
+            addLog('       "system": { "errors": { ".write": true } }');
+            addLog('     }');
+            addLog('   }');
+            
+            // 方法2: 認証付きで試行
+            addLog('📝 対処法2: Google認証で権限取得試行中...');
+            tryAuthenticatedWrite();
         };
+        
+        // 認証付き書き込み試行
+        function tryAuthenticatedWrite() {
+            const auth = firebase.auth();
+            const googleProvider = new firebase.auth.GoogleAuthProvider();
+            
+            auth.signInWithPopup(googleProvider)
+                .then((result) => {
+                    addLog(`✅ 認証成功: ${result.user.displayName}`);
+                    addLog('🔄 認証ユーザーとしてエラー保存試行...');
+                    
+                    // 認証ユーザーとして保存試行
+                    const testError = {
+                        id: `auth_test_${Date.now()}`,
+                        appName: "Error Test Page (Authenticated)",
+                        appVersion: "0.2.1",
+                        timestamp: Date.now(),
+                        type: "auth-test",
+                        message: "認証ユーザーテストエラー",
+                        userId: result.user.uid,
+                        userEmail: result.user.email
+                    };
+                    
+                    return database.ref('system/errors').push(testError);
+                })
+                .then(() => {
+                    addLog('✅ 認証ユーザーとして保存成功！');
+                })
+                .catch((error) => {
+                    addLog(`❌ 認証・保存エラー: ${error.message}`, true);
+                    if (error.code === 'auth/popup-blocked') {
+                        addLog('💡 ポップアップがブロックされました');
+                    }
+                });
+        }
 
         window.checkFirebaseData = function() {
             addLog('🔍 Firebase接続確認中...');
